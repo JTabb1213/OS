@@ -1,0 +1,28 @@
+movi r1, $0   ; start at 0
+movi r2, $33  ; start with a
+movi r3, $10  ; newline
+printcr r2
+printcr r3
+incr r1
+incr r2s
+CMPI r1, $26 
+JLTI -18
+movi r1, $0   ; start at 0
+movi r2, $0  ; start with a
+movi r3, $10  ; newline
+printr r2
+printcr r3
+incr r1
+incr r2s
+CMPI r1, $26 
+JLTI -18
+printr r6
+incr r6
+printr r6
+incr r6
+printr r6
+incr r6
+printr r6
+incr r6
+printr r6
+exit         ; terminates program

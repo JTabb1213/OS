@@ -25,7 +25,7 @@ public:
     }
 
     void setupInterruptTable();
-    void loadProgram();
-    void run();
+    void loadProgram(const std::vector<std::string> &filenames);
+    void run(const std::vector<std::string> &filenames);
 };
 #endif

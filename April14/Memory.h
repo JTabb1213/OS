@@ -28,9 +28,9 @@ private:
     PageTable &pt;
 
 public:
-    MemoryManager(PageTable &pagetable) : pt(pagetable)
+    MemoryManager(PageTable &pagetable, int memorySize) : pt(pagetable), MEMORY_SIZE(memorySize)
     {
-        MEMORY_SIZE = 1008;
+        // MEMORY_SIZE = 1008;
         memory.resize(MEMORY_SIZE, 0);
     }
 

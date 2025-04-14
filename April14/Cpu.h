@@ -2,12 +2,15 @@
 #define CPU_H
 
 #include <iostream>
+#include <algorithm>
 #include <vector>
 #include <cstdint>
 #include <unordered_map>
 #include <functional>
 #include "Opcodes.cpp"
-#include "MemoryPager.cpp"
+#include "MemoryPager.h"
+#include "PageTable.h"
+#include "PCB.h"
 
 class CPU
 {
@@ -16,9 +19,9 @@ private:
 
     // Register indices
     int INSTRUCTION_POINTER = 10; // r11
-    int CURRENT_PROCESS_ID = 11;  // r12
+    // int CURRENT_PROCESS_ID = 11;  // r12
     int STACK_POINTER_INDEX = 12; // r13
-    int GLOBAL_MEMORY_START = 13; // r14
+    // int GLOBAL_MEMORY_START = 13; // r14
 
     uint64_t clock = 0;
     std::vector<int> registers;
@@ -29,11 +32,13 @@ private:
     // std::unordered_map<std::string, std::function<void()>> interrupt_table;
 
     MemoryPager &mem;
+    PageTable &pageTable;
+    std::vector<PCB> &proTable;
 
 public:
-    CPU(MemoryPager &memoryP) : mem(memoryP), registers(NUM_OF_REG, 0)
+    CPU(MemoryPager &memoryP, PageTable &pageTable, std::vector<PCB> &processTable) : registers(NUM_OF_REG, 0), mem(memoryP), pageTable(pageTable), proTable(processTable)
     {
-        registers[STACK_POINTER_INDEX] = 256; // initialize stack pointer. since the highest memory location is 256 in a page, that will be our stack pointer
+        registers[STACK_POINTER_INDEX] = 63; // initialize stack pointer. since the highest memory location is 256 in a page, that will be our stack pointer
         // should point to the top location in memory, sice out instrcutions are 3 bytes, the stack pointer is size of memory - 3, or the
         // start of the last instruction in memory
         registers[INSTRUCTION_POINTER] = 0x00000000; // initialize the instruction pointer to be the first location in memory

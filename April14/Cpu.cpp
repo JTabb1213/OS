@@ -1,54 +1,72 @@
 #include "Cpu.h"
 #pragma GCC diagnostic ignored "-Wc++11-extensions"
 
+static int currentPageIndex = 0;
+
 void CPU::fetchAndExectuteInstructions()
 {
-    // std::cout << "Here" << std::endl;
     // pageTable.printOrder();
+    // sort table on priority, with 1 being the highest
+    std::sort(proTable.begin(), proTable.end(), [](const PCB &a, const PCB &b)
+              { return a.priority < b.priority; });
 
-    std::vector<int> pageOrder = pageTable.getOrder(); // Custom page order
-    // std::cout << "Here2" << std::endl;
-    int currentPageIndex = 0; // Track current page in the custom order
+    currentPageIndex = 0; // Track current page in the custom order
 
+    for (const PCB &process : proTable) // for debugging
+    {
+        std::cout << process.state << std::endl;
+    }
+    std::cout << std::endl;
+
+    // switch first process to running instead of queued
+    // proTable[currentPageIndex].state = "running";
     while (true)
     {
+        proTable[currentPageIndex].state = "running"; // switch current process to running instead of queued
         // std::cout << "HERE" << std::endl;
         int ip = registers[INSTRUCTION_POINTER]; // Get current instruction pointer (virtual address)
         // std::cout << "Instruction pointer is: " << ip << std::endl;
-        int virtualPage = pageOrder[currentPageIndex]; // Get the correct virtual page
+        int virtualPage = proTable[currentPageIndex].pageNumber; // Get the correct virtual page
         // std::cout << ip << std::endl;
         //  Convert virtual address to physical address using MMU
 
         // std::cout << "PHY " << physicalAddress << std::endl;
 
-        // Fetch instruction
+        // fetch instruction
         int opcode = mem.readMemory(ip);
         int op1 = mem.readMemory(ip + 1);
         int op2 = mem.readMemory(ip + 2);
 
-        // Execute instruction
+        // execute instruction
         executeInstruction(opcode, op1, op2);
 
-        // Move to next instruction
+        // move to next instruction
         registers[INSTRUCTION_POINTER] += 3;
 
-        // Check if we reached the end of the current page (21 instructions = 63 ints)
+        // check if we reached the end of the current page (21 instructions = 63 ints)
         if ((registers[INSTRUCTION_POINTER] & 0xFF) == 63)
         {
             std::cout << "Reached the end of Page " << virtualPage << ", switching pages now!" << std::endl;
-            currentPageIndex++; // Move to the next page in pageOrder
-            if (currentPageIndex >= pageOrder.size())
+            proTable[currentPageIndex].state = "ended"; // before we switch however, make sure the process is marked as ended
+            currentPageIndex++;                         // move to the next page in pageOrder
+            if (currentPageIndex >= proTable.size())
             {
                 std::cout << "Program execution complete!" << std::endl;
-                return; // Exit when all pages are executed
+                return; // exit when all pages are executed
             }
             // std::cout << "HERE" << std::endl;
-            int nextVirtualPage = pageOrder[currentPageIndex];
+            int nextVirtualPage = proTable[currentPageIndex].pageNumber;
             registers[INSTRUCTION_POINTER] = (nextVirtualPage << 8) | 0x00;
             // std::cout << "Instruction pointer is now: " << registers[INSTRUCTION_POINTER] << std::endl;
             // std::cout << "HERE1" << std::endl;
         }
     }
+
+    for (const PCB &process : proTable) // for debugging
+    {
+        std::cout << process.state << std::endl;
+    }
+    std::cout << std::endl;
 }
 
 /*
@@ -261,6 +279,12 @@ void CPU::executeInstruction(int op, int o1, int o2)
         std::cout << "Exiting." << std::endl;
         std::cout << "Memory contents of page 0 are: " << std::endl;
         mem.printPage(0);
+        proTable[currentPageIndex].state = "ended"; // mark the current process as complete
+        for (const PCB &process : proTable)         // for debugging
+        {
+            std::cout << process.state << std::endl;
+        }
+        std::cout << std::endl;
         exit(0);
         break;
     case 0x20: // popr

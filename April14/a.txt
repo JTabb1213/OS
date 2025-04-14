@@ -1,0 +1,18 @@
+movi r1, $0   ; start at 0
+movi r2, $65  ; start with a
+movi r3, $10  ; newline
+printcr r2
+printcr r3
+incr r1
+incr r2s
+CMPI r1, $26 
+JLTI -18
+movi r1, $0   ; start at 0
+movi r2, $97  ; start with a
+movi r3, $10  ; newline
+printcr r2
+printcr r3
+incr r1
+incr r2s
+CMPI r1, $26 
+JLTI -18
