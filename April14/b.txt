@@ -1,28 +1,15 @@
-movi r1, $0   ; start at 0
-movi r2, $33  ; start with a
-movi r3, $10  ; newline
-printcr r2
-printcr r3
-incr r1
-incr r2s
-CMPI r1, $26 
-JLTI -18
-movi r1, $0   ; start at 0
-movi r2, $0  ; start with a
-movi r3, $10  ; newline
-printr r2
-printcr r3
-incr r1
-incr r2s
-CMPI r1, $26 
-JLTI -18
-printr r6
-incr r6
-printr r6
-incr r6
-printr r6
-incr r6
-printr r6
-incr r6
-printr r6
-exit         ; terminates program
+movi r1, $0   ; declare 0 as the first number in the sequence
+movi r2, $1   ; declare 1 as the second number in the sequence
+movi r3, $0   ; initialize iteration counter to 0
+movi r4, $10  ; store newline character
+cmpi r3, $25  ; start of loop, while r3 != 25
+jei  $3     ; if r3 != 25, continue loop
+jmpi $24   ; if r3 == 25, jump to 'exit' instruction
+printr r1    ; print the current number in the sequence
+printcr r4   ; print newline character
+addr r1, r2   ; calculate the next value, store the result in r1
+movr r5, r1   ; These three instructions
+movr r1, r2   ; swap the values of
+movr r2, r5   ; r1 and r2.
+incr r3      ; keep count of the number of iterations in r3
+jmpi $-33   ; unconditionally jump to top of loop (cmpi)

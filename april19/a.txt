@@ -13,3 +13,4 @@ movr r1, r2   ; swap the values of
 movr r2, r5   ; r1 and r2.
 incr r3      ; keep count of the number of iterations in r3
 jmpi $-33   ; unconditionally jump to top of loop (cmpi)
+exit
