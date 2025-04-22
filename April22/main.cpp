@@ -5,6 +5,7 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include <deque>
 #include <algorithm>
 #include "Memory.h"
 #include "Opcodes.cpp"
@@ -27,39 +28,29 @@ int main(int argc, char *argv[])
     }
 
     std::vector<std::string> filenames;
+    int j = argc - 2;
+
     for (int i = 2; i < argc; ++i)
     {
         filenames.push_back(argv[i]);
     }
 
-    std::vector<PCB> processTable; // Store multiple processes (PCBs)
+    std::deque<PCB> processTable;
 
-    PCB process1;
+    for (int i = 2; i < argc; ++i)
+    {
+        PCB process;
 
-    // Initialize PCB members
-    process1.pid = 1234;
-    process1.state = "queued";
-    process1.priority = 1;
-    process1.programCounter = 0x1000;
-    process1.pageNumber = 0; // page 0 starts at location 0 in memory
+        process.pid = i; // or assign a unique PID if needed
+        process.state = "loaded";
+        process.priority = i - 1;   // priority starts at 1 for argv[2]
+        process.pageNumber = i - 2; // page number starts at 0
 
-    processTable.push_back(process1);
+        processTable.push_back(process);
+    }
 
-    process1.pid = 1234;
-    process1.state = "queued";
-    process1.priority = 2;
-    process1.programCounter = 0x1000;
-    process1.pageNumber = 1; // page 1 is at the 126th byte
-
-    processTable.push_back(process1);
-
-    process1.pid = 1234;
-    process1.state = "queued";
-    process1.priority = 3;
-    process1.programCounter = 0x1000;
-    process1.pageNumber = 2; // page 2 is at the 63rd byte
-
-    processTable.push_back(process1);
+    std::sort(processTable.begin(), processTable.end(), [](const PCB &a, const PCB &b)
+              { return a.priority < b.priority; });
 
     PageTable pt;
     // pt.printTable();

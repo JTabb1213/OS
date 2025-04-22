@@ -44,7 +44,8 @@ enum Opcode : int
     INPUTC,
     SETPRIORITY,
     SETPRIORITYI,
-    DEST
+    DEST,
+    SWI
 };
 
 #endif

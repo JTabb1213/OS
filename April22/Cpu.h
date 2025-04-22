@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <vector>
 #include <cstdint>
+#include <deque>
 #include <unordered_map>
 #include <functional>
 #include "Opcodes.cpp"
@@ -33,10 +34,10 @@ private:
     MemoryManager &m;
     MemoryPager &mem;
     PageTable &pageTable;
-    std::vector<PCB> &proTable;
+    std::deque<PCB> &proTable;
 
 public:
-    CPU(MemoryManager &m, MemoryPager &memoryP, PageTable &pageTable, std::vector<PCB> &processTable) : registers(NUM_OF_REG, 0), m(m), mem(memoryP), pageTable(pageTable), proTable(processTable)
+    CPU(MemoryManager &m, MemoryPager &memoryP, PageTable &pageTable, std::deque<PCB> &processTable) : registers(NUM_OF_REG, 0), m(m), mem(memoryP), pageTable(pageTable), proTable(processTable)
     {
         // initialize that stack pointer to the last virtual address (beggining of last page + offset of 63)
         int lastIntIndex = mem.getMemSize();
@@ -57,7 +58,7 @@ public:
 
     void fetchAndExectuteInstructions();
 
-    void executeInstruction(int op, int o1, int o2);
+    void executeInstruction(int op, int o1, int o2, std::deque<PCB> &d);
 };
 
 #endif

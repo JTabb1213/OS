@@ -3,5 +3,5 @@
 
 extern int pageNumberCurrentlyOn;
 extern int pageTrackerSwitchOn62;
-
+extern int numOfProcesses;
 #endif

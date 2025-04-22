@@ -7,8 +7,11 @@ void CPU::fetchAndExectuteInstructions()
 {
     // pageTable.printOrder();
     // sort table on priority, with 1 being the highest
-    std::sort(proTable.begin(), proTable.end(), [](const PCB &a, const PCB &b)
-              { return a.priority < b.priority; });
+
+    for (PCB &process : proTable) // for debugging
+    {
+        process.state = "waiting";
+    }
 
     currentPageIndex = 0; // Track current page in the custom order
 
@@ -17,17 +20,53 @@ void CPU::fetchAndExectuteInstructions()
         std::cout << process.state << std::endl;
     }
     std::cout << std::endl;
-
     // switch first process to running instead of queued
     // proTable[currentPageIndex].state = "running";
-    while (currentPageIndex < pageNumberCurrentlyOn)
+    while (!proTable.empty())
     {
-        proTable[currentPageIndex].state = "running"; // switch current process to running instead of queued
+        clock++; // increment the clock
+        proTable.front().clockCycles++;
+        if (proTable.front().clockCycles >= proTable.front().timeQuantum && proTable.size() > 1)
+        {
+            // std::cout << "Instruction pointer is1111: " << registers[INSTRUCTION_POINTER] << std::endl;
+            int offset = registers[INSTRUCTION_POINTER] & 0xFF; // get the lower 8 bits of the instuction pointer
+            std::cout << "time quantum expired!" << std::endl;
+            proTable.front().state = "waiting";
+            proTable.front().registerState = registers;
+            proTable.front().offset = offset;
+            /*
+            for (int element : proTable.front().registerState)
+            {
+                std::cout << element << "C" << std::endl;
+            }
+                */
+            proTable.front().clockCycles = 0; // reset the clock
+            PCB addToBack = proTable.front();
+            proTable.pop_front();
+            proTable.push_back(addToBack); // go to next page
+            registers = proTable.front().registerState;
+            // std::cout << std::endl;
+            /*
+            for (int element : proTable.front().registerState)
+            {
+                std::cout << element << "r" << std::endl;
+            */
+            int nextVirtualPage = proTable.front().pageNumber;
+            registers[INSTRUCTION_POINTER] = (nextVirtualPage << 8) | proTable.front().offset;
+            // std::cout << "Instruction pointer is: " << registers[INSTRUCTION_POINTER] << std::endl;
+            // std::cout << "R0 is: " << registers[0] << std::endl;
+            continue;
+        }
+
+        // std::cout << "R0 is: " << registers[0] << std::endl;
+        proTable.front().state = "running"; // switch current process to running instead of queued
         // std::cout << "HERE" << std::endl;
+        // std::cout << proTable.front().pageNumber << std::endl;
         int ip = registers[INSTRUCTION_POINTER]; // Get current instruction pointer (virtual address)
-        // std::cout << "JJJ: " << ip << std::endl;
-        //   std::cout << "Instruction pointer is: " << ip << std::endl;
-        int virtualPage = proTable[currentPageIndex].pageNumber; // Get the correct virtual page
+        // std::cout << "!!!!!!!" << ip << std::endl;
+        //   std::cout << "JJJ: " << ip << std::endl;
+        //     std::cout << "Instruction pointer is: " << ip << std::endl;
+        int virtualPage = proTable.front().pageNumber; // Get the correct virtual page
         // std::cout << ip << std::endl;
         //  Convert virtual address to physical address using MMU
 
@@ -39,30 +78,12 @@ void CPU::fetchAndExectuteInstructions()
         int op2 = mem.readMemory(ip + 2);
 
         // execute instruction
-        executeInstruction(opcode, op1, op2);
+        executeInstruction(opcode, op1, op2, proTable);
 
-        // move to next instruction
+        // move to next instruction, if not an exit instruction
         if (opcode != 0x1F)
         {
             registers[INSTRUCTION_POINTER] += 3;
-        }
-
-        // check if we reached the end of the current page (21 instructions = 63 ints)
-        if ((registers[INSTRUCTION_POINTER] & 0xFF) == 63)
-        {
-            std::cout << "Reached the end of Page " << virtualPage << ", switching pages now!" << std::endl;
-            proTable[currentPageIndex].state = "ended"; // before we switch however, make sure the process is marked as ended
-            currentPageIndex++;                         // move to the next page in pageOrder
-            if (currentPageIndex >= proTable.size())
-            {
-                std::cout << "Program execution complete!" << std::endl;
-                return; // exit when all pages are executed
-            }
-            // std::cout << "HERE" << std::endl;
-            int nextVirtualPage = proTable[currentPageIndex].pageNumber;
-            registers[INSTRUCTION_POINTER] = (nextVirtualPage << 8) | 0x00;
-            // std::cout << "Instruction pointer is now: " << registers[INSTRUCTION_POINTER] << std::endl;
-            // std::cout << "HERE1" << std::endl;
         }
     }
 
@@ -73,28 +94,7 @@ void CPU::fetchAndExectuteInstructions()
     std::cout << std::endl;
 }
 
-/*
-void CPU::fetchAndExectuteInstructions()
-{
-    // std::cout << "HERE" << std::endl;
-    while (registers[INSTRUCTION_POINTER] < 63) // 63 ints, or 63/3 = 21 instructions per page.
-    {
-        // std::cout << "HERE" << std::endl;
-        // std::cout << "IP is: " << registers[INSTRUCTION_POINTER] << std::endl;
-        int ip = registers[INSTRUCTION_POINTER]; // get the value of the instruction we are supposed to execute
-
-        int opcode = mem.readMemory(ip); // get the opcode and the two operand values for that opcode
-        int op1 = mem.readMemory(ip + 1);
-        int op2 = mem.readMemory(ip + 2);
-
-        registers[INSTRUCTION_POINTER] += 3; // because in memory, every instrcution is stored every 12 bytes, or 3 int values, we need to increment our memory address by three to get the next instruction value.
-        executeInstruction(opcode, op1, op2);
-    }
-
-    std::cout << "reached the end of the page, switching pages now!" << std::endl;
-}
-*/
-void CPU::executeInstruction(int op, int o1, int o2)
+void CPU::executeInstruction(int op, int o1, int o2, std::deque<PCB> &proQueue)
 {
     clock++; // increment the clock by 1 for each instruction
     switch (op)
@@ -142,7 +142,8 @@ void CPU::executeInstruction(int op, int o1, int o2)
         // memory[registers[o1]] = memory[registers[o2]]
         break;
     case 0x0A: // printr
-        std::cout << "Contents of register " << o1 << " are: " << registers[o1] << std::endl;
+               // std::cout << std::dec << "Contents of register " << o1 << " are: " << registers[o1] << std::endl;
+        std::cout << std::dec << registers[o1] << std::endl;
         break;
     case 0x0B: // printm
         std::cout << "Contents of memory at register " << o1 << " are: " << mem.readMemory(registers[o1]) << std::endl;
@@ -288,29 +289,33 @@ void CPU::executeInstruction(int op, int o1, int o2)
         break;
     case 0x1F: // exit, i chose to print the memory contents as well.
     {
-        /*
-            std::cout << "Exiting." << std::endl;
-            std::cout << "Memory contents of page 0 are: " << std::endl;
-            mem.printPage(0);
-            proTable[currentPageIndex].state = "ended"; // mark the current process as complete
-            for (const PCB &process : proTable)         // for debugging
-            {
-                std::cout << process.state << std::endl;
-            }
-            std::cout << std::endl;
-        */
-        // exit(0);
-        proTable[currentPageIndex].state = "ended";
-        std::cout << "Reached the end of Page " << currentPageIndex << ", switching pages now!" << std::endl;
-        currentPageIndex++; // move to the next page in pageOrder
-        if (currentPageIndex >= proTable.size())
-        {
-            std::cout << "Program execution complete!" << std::endl;
-            return; // exit when all pages are executed
-        }
         // std::cout << "HERE" << std::endl;
-        int nextVirtualPage = proTable[currentPageIndex].pageNumber;
-        registers[INSTRUCTION_POINTER] = (nextVirtualPage << 8) | 0x00;
+        std::cout << "Reached the end of Page " << proQueue.front().pageNumber << ", switching pages now!" << std::endl;
+        proQueue.front().state = "ended";
+        /*
+                int base = proQueue.front().pageNumber << 8;
+                for (int i = 0; i <= 62; i++) // Or up to 255 if you're clearing the full page
+                {
+                    int erase = base | i;
+                    mem.writeMemory(erase, 0);
+                }
+        */
+        proQueue.pop_front();
+
+        // currentPageIndex++; // move to the next page in pageOrder
+        //  if (currentPageIndex >= proTable.size())
+        //{
+        //      std::cout << "Program execution complete!" << std::endl;
+        //      return; // exit when all pages are executed
+        //  }
+        //   std::cout << "HERE" << std::endl;
+        if (proQueue.empty())
+        { // if its empty return nothing because the loop will just end.
+            return;
+        }
+        int nextVirtualPage = proTable.front().pageNumber;
+        registers = proTable.front().registerState;
+        registers[INSTRUCTION_POINTER] = (nextVirtualPage << 8) | proTable.front().offset;
         // registers[INSTRUCTION_POINTER] -= 3;
         //  std::cout << "INS!!!!!!!!!: " << registers[INSTRUCTION_POINTER] << std::endl;
         break;
@@ -318,6 +323,7 @@ void CPU::executeInstruction(int op, int o1, int o2)
     case 0x20: // popr
     {
         // get the contents at the top of the stack, or the contents in memory.
+        // std::cout << "HERE" << std::endl;
         int i = mem.readMemory(registers[STACK_POINTER_INDEX]);
         registers[o1] = i; // pop it into rx
         registers[STACK_POINTER_INDEX] += 3;
@@ -372,6 +378,29 @@ void CPU::executeInstruction(int op, int o1, int o2)
     case 0x27:
         registers[STACK_POINTER_INDEX] += 3;
         break;
+    case 0x28:
+    {
+        // std::cout << registers[o1] << std::endl;
+        if (registers[o1] == 2000000)
+        {
+            // registers[o1] -= registers[o2];
+            // std::cout << "HERE" << proQueue.size() << std::endl;
+            // int offset = registers[INSTRUCTION_POINTER] & 0xFF;
+            std::cout << "process switched!" << std::endl;
+            proTable.front().state = "waiting";
+            proTable.front().registerState = registers;
+            // proTable.front().offset = offset;
+            proTable.front().clockCycles = 0; // reset the clock
+            PCB addToBack = proTable.front();
+            proTable.pop_front();
+            proTable.push_back(addToBack); // go to next page
+            registers = proTable.front().registerState;
+            int nextVirtualPage = proTable.front().pageNumber;
+            registers[INSTRUCTION_POINTER] = (nextVirtualPage << 8) | proTable.front().offset;
+            registers[INSTRUCTION_POINTER] -= 3;
+        }
+        break;
+    }
     default:
         std::cerr << "Error, unknown opcode: " << (int)op << std::endl;
         break;

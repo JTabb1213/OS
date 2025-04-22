@@ -6,27 +6,6 @@ int MemoryManager::getMemorySize() // returns the memory size for printing purpo
     return MEMORY_SIZE;
 }
 
-int MemoryManager::findFreePage(int currentAddress)
-{
-    int i = 0;
-    int currentPage = currentAddress / 63;
-    while (i < getMemorySize())
-    {
-        currentPage++;
-
-        // += 63 because there are 21 instructions per page
-        currentAddress += 63;
-        if (memory[currentAddress] == 0x00000000 && memory[currentAddress + 1] == 0x00000000 && memory[currentAddress + 2] == 0x00000000) // make sure the entire instruction is nothing, that means we have found a free page
-        {
-            return currentAddress;
-        }
-
-        i += 63;
-    }
-
-    return -1;
-}
-
 int MemoryManager::readMemory(int address)
 {
     if (address >= MEMORY_SIZE)
@@ -294,6 +273,11 @@ void MemoryManager::loadInstructionsIntoMemory(std::string filename) // read fil
         else if (opcodeStr == "dest")
         {
             opcode = Opcode::DEST;
+        }
+        else if (opcodeStr == "swi")
+        {
+            opcode = Opcode::SWI;
+            // std::cout << "!!!!!!!!!!" << opcode << std::endl;
         }
         else
         {

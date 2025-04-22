@@ -35,7 +35,6 @@ public:
         memory.resize(MEMORY_SIZE, 0);
     }
 
-    int findFreePage(int i);
     int getMemorySize();
     int readMemory(int address);
 

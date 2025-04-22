@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <deque>
 #include <cstdint>
 #include <map>
 #include <unordered_map>
@@ -16,11 +17,11 @@ class OS
 private:
     CPU &cpu;
     MemoryManager &memory;
-    std::vector<PCB> &processTable;
+    std::deque<PCB> &processTable;
     // int next = 1;
 
 public:
-    OS(CPU &cpu, MemoryManager &memory, std::vector<PCB> &processTable) : cpu(cpu), memory(memory), processTable(processTable)
+    OS(CPU &cpu, MemoryManager &memory, std::deque<PCB> &processTable) : cpu(cpu), memory(memory), processTable(processTable)
     {
         setupInterruptTable();
     }
