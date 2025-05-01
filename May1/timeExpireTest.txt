@@ -1,0 +1,6 @@
+movi r0, $0
+incr r0
+printr r0
+cmpi r0, $500
+jei -12
+exit
